@@ -1,1 +1,1 @@
-# register_sv_rtl_and_tb_gen
+# register_block_sv_rtl_and_tb_gen
