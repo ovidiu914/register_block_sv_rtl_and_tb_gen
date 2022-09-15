@@ -84,7 +84,6 @@ class register:
         self.generate_uvm_code()
 
 
-
 def generate_code():
     parse_json_and_fill_reg_data();
     generate_rtl_reg_block();
