@@ -1,8 +1,10 @@
 {
+	"ADDR_WIDTH_IN_BYTES"     : "4",
+	"DATA_WIDTH_IN_BYTES"     : "4",
+	
 	"Configuration_register" : {
 			"width"   :  32 ,
 			"address" : "'h0",
-			"is_resettable" : "TRUE",
 			"reset_value"   : "'h4",
 			"mask"          : "'h1",
 			"fields": {
@@ -13,18 +15,15 @@
 		   			},
 		   			"reserved0"  : {
 					            "offset"     : 1,
-			 		            "width"      : 32,
+			 		            "width"      : 31,
 			                    "access_type": "RW"
 					}
 			}
 	},
-	
-	
 
 	"Receive_packets_count" : {
 			"width"   :  32 ,
 			"address" : "'h4",
-			"is_resettable" : "TRUE",
 			"reset_value"   : "'h0",
 			"mask"          : "'h1",
 			"fields": {
@@ -39,7 +38,6 @@
 	"Transmit_packets_count" : {
 			"width"   :  32 ,
 			"address" : "'h8",
-			"is_resettable" : "TRUE",
 			"reset_value"   : "NOT_RESETABLE",
 			"mask"          : "'h1",
 			"fields": {

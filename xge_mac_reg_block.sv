@@ -56,7 +56,7 @@ module xge_mac_reg_block_reg_container#(parameter REG_DATA_WIDTH=32) (
     assign Transmit_packets_count_rdata_o = Transmit_packets_count;
 
 endmodule:xge_mac_reg_block_reg_container
-module xge_mac_reg_block_decoder #(parameter REG_ADDR_WIDTH = 32, parameter REG_DATA_WIDTH = 32) (
+module xge_mac_reg_block_decoder #(parameter REG_ADDR_WIDTH = 32, parameter REG_DATA_WIDTH = 32, parameter BASE_ADDRESS = 0) (
 
     input clk,
     input resetn,
@@ -90,9 +90,9 @@ module xge_mac_reg_block_decoder #(parameter REG_ADDR_WIDTH = 32, parameter REG_
     );
 
     //Registers addresses
-    localparam Configuration_register_ADDR = 'h0;
-    localparam Receive_packets_count_ADDR = 'h4;
-    localparam Transmit_packets_count_ADDR = 'h8;
+    localparam Configuration_register_ADDR = BASE_ADDRESS + 'h0;
+    localparam Receive_packets_count_ADDR = BASE_ADDRESS + 'h4;
+    localparam Transmit_packets_count_ADDR = BASE_ADDRESS + 'h8;
 
     //ACK/ERR fsm states;
     localparam IDLE = 0;

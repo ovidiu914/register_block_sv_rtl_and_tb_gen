@@ -15,15 +15,17 @@ tab7     = f"{tab6}{tab1}"
 tab8     = f"{tab7}{tab1}"
 
 class reg_model:
-    def __init__(self,registers,block_name):
-        self.reg_model_name = block_name
+    def __init__(self,registers,block_name,ADDR_WIDTH_IN_BYTES):
+        self.reg_model_name = f"{block_name}_tb"
         self.regs           = registers
         self.reg_model_code = ''
+        self.ADDR_WIDTH_IN_BYTES = ADDR_WIDTH_IN_BYTES
         self.generate_code()
 
     def generate_code(self):
         self.gen_reg_class()
         self.create_reg_block_code()
+        self.generate_reg_model_file()
         print(self.reg_model_code)
     
     def gen_reg_class(self):
@@ -35,6 +37,7 @@ class reg_model:
     def create_reg_block_code(self):
         #Class header and factory macro
         reg_block_s        = f"class {self.reg_model_name} extends uvm_reg_block;{nl}{tab1}`uvm_object_utils({self.reg_model_name}){nl}"
+        reg_block_s        = f"{reg_block_s}{tab1}uvm_reg_map map; {nl}"
         regs_declaration_s = ''
         #Build function header
         virtual_build_s    = f"{tab1}virtual function void build();{nl}"
@@ -56,23 +59,26 @@ class reg_model:
         self.reg_model_code =  f"{self.reg_model_code}{reg_block_s}"
 
     def generate_reg_model_file(self):
-        f = open(f"{self.reg_model_name}.svh","w")
+        f = open(f"{self.reg_model_name}.sv","w")
         f.write(self.reg_model_code)
         f.close()
 
     def generate_default_map(self):
-        self.map_code = f"{tab2}default_map = create_map({nl}"
-        self.map_code = f"{self.map_code}{tab3}name         = \"{self.reg_model_name}_map\",{nl}"
-        self.map_code = f"{self.map_code}{tab3}base_address = 'h0,{nl}"
-        self.map_code = f"{self.map_code}{tab3}n_bytes      = 1,{nl}"
-        self.map_code = f"{self.map_code}{tab3}endian       = UVM_BIG_ENDIAN);{nl}"
-        self.map_code = f"{self.map_code}{tab2}default_map.set_check_on_read(1);{nl}"
+        self.map_code = f"{tab2}default_map = map;({nl}"
+        self.map_code = f"{tab2}map = create_map({nl}"
+        self.map_code = f"{self.map_code}{tab3}.name       (\"{self.reg_model_name}_map\"),{nl}"
+        self.map_code = f"{self.map_code}{tab3}.base_addr  (0),{nl}"
+        self.map_code = f"{self.map_code}{tab3}.n_bytes    ({self.ADDR_WIDTH_IN_BYTES}),{nl}"
+        self.map_code = f"{self.map_code}{tab3}.endian     (UVM_BIG_ENDIAN),{nl}"
+        self.map_code = f"{self.map_code}{tab3}.byte_addressing(1){nl}"
+        self.map_code = f"{self.map_code}{tab2});{nl}"
+        self.map_code = f"{self.map_code}{tab2}map.set_check_on_read(1);{nl}"
         for reg in self.regs:
             reg_acces = ''
             for field in reg.fields:
                 reg_acces = reg.fields[field]['access_type']
                 break;
-            self.map_code = f"{self.map_code}{tab2}map.add_reg({reg.name},{reg.address},{reg_acces};{nl}"
+            self.map_code = f"{self.map_code}{tab2}map.add_reg({reg.name},{reg.address},\"{reg_acces}\");{nl}"
 
     # def add_registers_to_map(self):
 

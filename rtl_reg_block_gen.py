@@ -1,4 +1,4 @@
-nl   = '\n'
+nl       = '\n'
 tab1     = '    '
 tab2     = f"{tab1}{tab1}" 
 tab3     = f"{tab2}{tab1}" 
@@ -10,18 +10,20 @@ tab8     = f"{tab7}{tab1}"
 
 class rtl_reg_block:
     
-    def __init__(self,reg_data_width,reg_block_name,registers):
+    def __init__(self,registers,reg_block_name,ADDR_WIDTH_IN_BYTES,DATA_WIDTH_IN_BYTES):
+        self.registers       = registers
+        self.reg_block_name  = reg_block_name
+        self.base_addr_param = f"{self.reg_block_name}_BASE_ADDR"
+        self.reg_addr_width  = 8*ADDR_WIDTH_IN_BYTES
+        self.reg_data_width  = 8*DATA_WIDTH_IN_BYTES
         ''' Module names '''
         self.reg_container  = f"{reg_block_name}_reg_container"
         self.reg_decoder    = f"{reg_block_name}_decoder"
-        self.reg_block_name = reg_block_name
+        
         ''' Parsed from json'''
-        self.reg_addr_width      = 32 
-        self.reg_data_width      = reg_data_width
         self.reg_container_code  = ''
         self.decoder_code        = ''
         self.reg_block_code      = ''
-        self.registers           = registers
         
     # Reg container         
     def gen_reg_container_inputs(self):
@@ -49,28 +51,53 @@ class rtl_reg_block:
             reg_decl = f"{reg_decl}{tab1}reg [REG_DATA_WIDTH-1:0] {reg.name};{nl}"
         self.reg_container_code = f"{self.reg_container_code}{reg_decl}"
     
-    # Reg container    
+    
+    def gen_reg_with_no_reset(self,reg):
+        reg_string = f"{nl}{tab1}always_ff @(posedge clk) begin : {reg.name}_inst{nl}"
+        reg_string = f"{reg_string}{tab2}if({reg.name}_wen_i) begin{nl}"
+        reg_string = f"{reg_string}{tab3}{reg.name} <= reg_wdata_i;{nl}"
+        reg_string = f"{reg_string}{tab2}end{nl}"
+        reg_string = f"{reg_string}{tab1}end{nl}"
+        reg_string = f"{reg_string}{tab1}assign {reg.name}_rdata_o = {reg.name};{nl}"
+
+        return reg_string
+    def gen_reg_with_reset(self,reg):
+        reg_string = f"{nl}{tab1}always_ff @(posedge clk or negedge resetn) begin : {reg.name}_inst{nl}"
+        reg_string = f"{reg_string}{tab2}if (!resetn) begin{nl}"
+        reg_string = f"{reg_string}{tab1}{tab1}{tab1}{reg.name} <= {reg.reset_value};{nl}";
+        reg_string = f"{reg_string}{tab1}{tab1}end{nl}{tab1}{tab1}else begin{nl}"
+        reg_string = f"{reg_string}{tab1}{tab1}{tab1}if ({reg.name}_wen_i) begin{nl}"
+        reg_string = f"{reg_string}{tab4}{reg.name} <= reg_wdata_i;{nl}"
+        reg_string = f"{reg_string}{tab1}{tab1}{tab1}end{nl}"
+        reg_string = f"{reg_string}{tab1}{tab1}end{nl}"
+        reg_string = f"{reg_string}{tab1}end{nl}{nl}"
+        reg_string = f"{reg_string}{tab1}assign {reg.name}_rdata_o = {reg.name};{nl}"
+        # print (reg_string)
+        return reg_string
+ # Reg container    
     def gen_registers(self):
         reg_string = ''
         for reg in self.registers:
             if (reg.reset_value != "NOT_RESETABLE"):
-                reg_string = f"{nl}{tab1}always_ff @(posedge clk or negedge resetn) begin : {reg.name}_inst{nl}"
-                reg_string = f"{reg_string}{tab2}if (!resetn) begin{nl}"
-                reg_string = f"{reg_string}{tab1}{tab1}{tab1}{reg.name} <= {reg.reset_value};{nl}";
-                reg_string = f"{reg_string}{tab1}{tab1}end{nl}{tab1}{tab1}else begin{nl}"
-                reg_string = f"{reg_string}{tab1}{tab1}{tab1}if ({reg.name}_wen_i) begin{nl}"
-                reg_string = f"{reg_string}{tab4}{reg.name} <= reg_wdata_i;{nl}"
-                reg_string = f"{reg_string}{tab1}{tab1}{tab1}end{nl}"
-                reg_string = f"{reg_string}{tab1}{tab1}end{nl}"
-                reg_string = f"{reg_string}{tab1}end{nl}{nl}"
-                reg_string = f"{reg_string}{tab1}assign {reg.name}_rdata_o = {reg.name};{nl}"
+                reg_string = self.gen_reg_with_reset(reg)
+                # reg_string = f"{nl}{tab1}always_ff @(posedge clk or negedge resetn) begin : {reg.name}_inst{nl}"
+                # reg_string = f"{reg_string}{tab2}if (!resetn) begin{nl}"
+                # reg_string = f"{reg_string}{tab1}{tab1}{tab1}{reg.name} <= {reg.reset_value};{nl}";
+                # reg_string = f"{reg_string}{tab1}{tab1}end{nl}{tab1}{tab1}else begin{nl}"
+                # reg_string = f"{reg_string}{tab1}{tab1}{tab1}if ({reg.name}_wen_i) begin{nl}"
+                # reg_string = f"{reg_string}{tab4}{reg.name} <= reg_wdata_i;{nl}"
+                # reg_string = f"{reg_string}{tab1}{tab1}{tab1}end{nl}"
+                # reg_string = f"{reg_string}{tab1}{tab1}end{nl}"
+                # reg_string = f"{reg_string}{tab1}end{nl}{nl}"
+                # reg_string = f"{reg_string}{tab1}assign {reg.name}_rdata_o = {reg.name};{nl}"
             else: 
-                reg_string = f"{nl}{tab1}always_ff @(posedge clk) begin : {reg.name}_inst{nl}"
-                reg_string = f"{reg_string}{tab2}if({reg.name}_wen_i) begin{nl}"
-                reg_string = f"{reg_string}{tab3}{reg.name} <= reg_wdata_i;{nl}"
-                reg_string = f"{reg_string}{tab2}end{nl}"
-                reg_string = f"{reg_string}{tab1}end{nl}"
-                reg_string = f"{reg_string}{tab1}assign {reg.name}_rdata_o = {reg.name};{nl}"
+                reg_string = self.gen_reg_with_no_reset(reg)
+                # reg_string = f"{nl}{tab1}always_ff @(posedge clk) begin : {reg.name}_inst{nl}"
+                # reg_string = f"{reg_string}{tab2}if({reg.name}_wen_i) begin{nl}"
+                # reg_string = f"{reg_string}{tab3}{reg.name} <= reg_wdata_i;{nl}"
+                # reg_string = f"{reg_string}{tab2}end{nl}"
+                # reg_string = f"{reg_string}{tab1}end{nl}"
+                # reg_string = f"{reg_string}{tab1}assign {reg.name}_rdata_o = {reg.name};{nl}"
 
             self.reg_container_code =f"{self.reg_container_code}{reg_string}"
             
@@ -83,7 +110,7 @@ class rtl_reg_block:
    
     # Reg decoder
     def gen_decoder_header(self):
-        decoder_h= f"module {self.reg_decoder} #(parameter REG_ADDR_WIDTH = {self.reg_addr_width}, parameter REG_DATA_WIDTH = {self.reg_addr_width}) ({nl}{nl}"
+        decoder_h= f"module {self.reg_decoder} #(parameter REG_ADDR_WIDTH = {self.reg_addr_width}, parameter REG_DATA_WIDTH = {self.reg_data_width}, parameter BASE_ADDRESS = 0) ({nl}{nl}"
         decoder_h =f"{decoder_h}{tab1}input clk,{nl}"
         decoder_h =f"{decoder_h}{tab1}input resetn,{nl}"
         decoder_h =f"{decoder_h}{nl}{tab1}//input data from the ocp bridge,{nl}"
@@ -126,7 +153,7 @@ class rtl_reg_block:
             reg.wen_w    = f"{reg.name}_wen_o_w"
             ''' ADD ren to specific reg'''
             reg.ren      = f"{reg.name}_ren_o"
-            reg_decl     = f"{reg_decl}{tab1}localparam {reg.addr_var} = {reg.address};{nl}"
+            reg_decl     = f"{reg_decl}{tab1}localparam {reg.addr_var} = BASE_ADDRESS + {reg.address};{nl}"
         self.decoder_code = f"{self.decoder_code}{tab1}//Registers addresses{nl}"
         self.decoder_code = f"{self.decoder_code}{reg_decl}{nl}"
         
@@ -451,7 +478,7 @@ class rtl_reg_block:
          
          # print (self.code)
          
-         # print (self.reg_container_code)
-         # print (self.decoder_code)
-         # print (self.reg_block_code)
+         print (self.reg_container_code)
+         print (self.decoder_code)
+         print (self.reg_block_code)
          
